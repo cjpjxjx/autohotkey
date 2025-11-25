@@ -1,0 +1,4 @@
+# Prevent Git from converting file line endings
+*.bat -text
+*.ps1 -text
+*.reg -text
