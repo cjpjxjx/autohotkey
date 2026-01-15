@@ -5,7 +5,7 @@
 ; ==============================================================================
 ; 功能说明：
 ; 1. 强制 NumLock 常亮
-; 2. NumLock 键映射为快速输入预设文本
+; 2. 双击 NumLock 键映射为快速输入预设文本
 ; 3. 小键盘数字键映射（无论 NumLock 状态如何都输出数字）
 ; ==============================================================================
 
@@ -65,39 +65,45 @@ IME_SET(state, hWnd) {
 }
 
 ; ==============================================================================
-; 功能 1：NumLock 键 -> 慢速稳定输入文本
+; 功能 1：双击 NumLock 键 -> 慢速稳定输入文本
 ; ==============================================================================
-*NumLock::
+; 检测双击：两次按键间隔小于 300 毫秒视为双击
+NumLock::
 {
-    ; 保存当前输入法状态
-    currentWindow := WinExist("A")
-    originalIMEStatus := IME_GET(currentWindow)
-
-    ; 如果输入法开启（中文状态），则关闭它（切换到英文）
-    if (originalIMEStatus = 1) {
-        IME_SET(0, currentWindow)
-        Sleep 25  ; 等待输入法切换完成
-    }
-
-    ; 设置按键延迟：按下时长 25ms，按键间隔 25ms
-    SetKeyDelay 25, 25
-
-    ; 使用 Raw 模式逐字符发送，更适合虚拟化环境
-    ; Raw 模式直接发送字符码，不进行任何转换
-    Loop Parse, NumLockInput
+    ; 检测是否为双击
+    if (A_PriorHotkey = "NumLock" && A_TimeSincePriorHotkey < 300)
     {
-        SendEvent "{Raw}" A_LoopField
-    }
+        ; 保存当前输入法状态
+        currentWindow := WinExist("A")
+        originalIMEStatus := IME_GET(currentWindow)
 
-    ; 恢复原输入法状态
-    if (originalIMEStatus = 1) {
-        Sleep 25  ; 等待输入完成后再切换输入法
-        IME_SET(1, currentWindow)
-    }
+        ; 如果输入法开启（中文状态），则关闭它（切换到英文）
+        if (originalIMEStatus = 1) {
+            IME_SET(0, currentWindow)
+            Sleep 25  ; 等待输入法切换完成
+        }
 
-    ; 根据配置决定是否显示 OSD 提示
-    if (ShowOSDNotification)
-        ShowOSD("输入完成", 1000)
+        ; 设置按键延迟：按下时长 25ms，按键间隔 25ms
+        SetKeyDelay 25, 25
+
+        ; 使用 Raw 模式逐字符发送，更适合虚拟化环境
+        ; Raw 模式直接发送字符码，不进行任何转换
+        Loop Parse, NumLockInput
+        {
+            SendEvent "{Raw}" A_LoopField
+        }
+
+        ; 恢复原输入法状态
+        if (originalIMEStatus = 1) {
+            Sleep 25  ; 等待输入完成后再切换输入法
+            IME_SET(1, currentWindow)
+        }
+
+        ; 根据配置决定是否显示 OSD 提示
+        if (ShowOSDNotification)
+            ShowOSD("输入完成", 1000)
+    }
+    ; 单击时不做任何操作（NumLock 已设置为常亮）
 }
 
 ; ==============================================================================
@@ -135,5 +141,5 @@ IME_SET(state, hWnd) {
 *Numpad9::Send "{Blind}9"
 *NumpadPgUp::Send "{Blind}9"
 
-*NumpadDot::Send "{Text}."
-*NumpadDel::Send "{Text}."
+*NumpadDot::Send "{Blind}."
+*NumpadDel::Send "{Blind}."
